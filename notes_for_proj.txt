@@ -1,0 +1,19 @@
++ SORT by unique values on column 1
+sort -u -t, -k1,1 nsrlfile_358.txt > unique_hashes-358.txt
+
++ Search for object ending with pattern on column 4 and print whole line....dont forget about capital letters
+awk -F "\"*,\"*" '$4 ~ /exe$/ { print $0 } ' win_com_all.txt
+
++ Cut by Delimeter of TAB
+cut -d $'\t' -f1 > not_found_hashes.out
+
++ Find hashes from TFK images log based on name
+grep '[Ee][xX][Ee]".$' W8.1-Gold.csv
+
++ Create database with hfind
+hfind -i nsrl-sha1 rolling_wlist.db
+
+hostname$ time find /mnt/[CD] \( -name "*.[Ee][Xx][Ee]" -exec md5sum '{}' \; \) -o \( -name "*.[Cc][Oo][Mm]" -exec md5sum '{}' \; \) > /THANK/RAIDZ1/Project-SERVICE/SERV_MD5-executables.txt
+
++ Remove space from end of line
+tr -d ' ' < mcafee_need_to_clean.txt  > is_it_clean.txt
