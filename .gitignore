@@ -1,0 +1,12 @@
+# Ignore these files
+.DS_Store
+/full_nsrl/*
+/gold_hashes/*
+/rc_hashes/*
+/reports
+/target_system
+/virustotal/chunker/*
+filesystem.dobby
+filesystem.dobby2
+target.hashes
+rem_3.out
