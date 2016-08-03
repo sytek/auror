@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import simplejson, urllib, urllib2, traceback
-import subprocess, os
+import subprocess, os, re, sys
 import time
 
 apt_count = 0
 malware_count = 0
 fp_count = 0
 wlist_count = 0
+host = sys.argv[1]
 
 def header():
 	# Report Header
@@ -23,6 +24,11 @@ def header():
 			''')
 		f.write('\nHostname: n/a'+ '\n\n')
 
+def header_csv():
+	# CSV Report Header
+	with open('reports/report.csv', 'a') as f:
+		f.write('hostname;hash;category;path;filename\n')
+
 # ADD A HASH VALUE TO THE WHITELIST
 def add_to_wlist(hashval):
 	with open('session_whitelist.txt', 'a') as f:
@@ -31,16 +37,25 @@ def add_to_wlist(hashval):
 # ADD SUSPECTED APT HASH TO REPORT
 def add_to_report(hashval):
 	with open('reports/report.txt', 'a') as f:
-		cmd = 'grep %s filesystem.dobby' % hashval
-		out = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-		filepath = out.stdout.read()
-		f.write("\n[!] DEMENTOR APT FOUND!  -- " + hashval + '\n')
-		f.write(filepath)
+		with open('filesystem.dobby') as w:
+			for line in w:
+				if line.startswith(hashval):
+					hit_list = line.split(" ; ")
+					add_csv(host, hit_list, "DEMENTOR")
+					f.write("\n[!] DEMENTOR APT FOUND!  -- " + hashval + '\n')
+					f.write(line)
+
+
+def add_csv(host, list, category):
+	with open('reports/report.csv', 'a') as f:
+		c_str = '%s;%s;%s;%s;%s' % (host, list[0], category, list[1], list[2])
+		f.write(c_str)
 
 ## CHECK IF FILE REPORT.TXT ALREADY EXISTS
 if os.path.exists('reports/report.txt') is False:
 	header()
-
+if os.path.exists('reports/report.csv') is False:
+	header_csv()
 
 # MERGE REMANING HASHES & CREATE CSV LIST AND SAVE TO VARIABLE: batch_hashes
 path = 'virustotal/chunker/'
@@ -78,24 +93,27 @@ for filename in os.listdir(path):
 
 				elif 0 < parsed_json[x]['positives'] <= 3:
 					# COULD BE FALSE POSITIVE
-					l_shaval = parsed_json[x]['sha1']
-					cmds = 'grep -i %s filesystem.dobby' % l_shaval
-					out = subprocess.Popen(cmds, shell=True, stdout=subprocess.PIPE)
-					filepath = out.stdout.read()
+					l_shaval = parsed_json[x]['sha1'].upper()
+					with open('filesystem.dobby') as f:
+						for line in f:
+							if line.startswith(l_shaval):
+								hit_list = line.split(" ; ")
+								add_csv(host, hit_list, "INCONCLUSIVE")
 
 					with open('reports/report.txt', 'a') as f:
 						print "[?] FALSE POSITIVE?"
 						f.write("\n[?] FALSE POSITIVE? - AV Detections: %s / %s" % (parsed_json[x]['positives'], parsed_json[x]['total']) )
 						f.write("\n\tSHA1: %s" % parsed_json[x]['sha1'] + '\n')
 						f.write("\tMD5: %s" % parsed_json[x]['md5'] + '\n')
-						f.write(filepath + '\n')
+						#f.write(filepath + '\n')
 						fp_count += 1
 
 				else:
+					hash_sha1 = parsed_json[x]['sha1'].upper()
 					with open('reports/report.txt', 'a') as f:
 						print "\033[1;31m[+] BOGGART FOUND \033[1;m"
 						f.write("\n[+] BOGGART FOUND \n")
-						f.write("\tSHA1: %s" % parsed_json[x]['sha1'] + '\n')
+						f.write("\tSHA1: %s" % hash_sha1 + '\n')
 						f.write("\tMD5: %s" % parsed_json[x]['md5'] + '\n')
 						f.write("\tDetected: %s / %s" % (parsed_json[x]['positives'], parsed_json[x]['total']) + '\n')
 						f.write('\n\tScan Report From: %s' % parsed_json[x]['scan_date'] + '\n')
@@ -106,14 +124,17 @@ for filename in os.listdir(path):
 						f.write('\t\t\tMalwarebytes:\t %s' % parsed_json[x]['scans']['Malwarebytes']['result']+ '\n\n')
 
 						f.write('\t\t\t[-] File: \n')
-						cmd = 'grep -i %s filesystem.dobby' % parsed_json[x]['sha1']
-						out = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-						fpath = out.stdout.read()
-						f.write('\t\t\t%s \n\n' % fpath)
+						with open('filesystem.dobby') as w:
+							for line in w:
+								if line.startswith(hash_sha1):
+									hit_list = line.split(" ; ")
+									add_csv(host, hit_list, "MALWARE")
+									f.write('\t\t\t%s \n\n' % line)
+
 						malware_count += 1
 
 			x -= 1
-
+		#add_csv('anibalro-mobil','2454hh45h4', 'MALWARE','somepath', 'calc.exe')
 		print "-----------------------------------"
 		print "[+] Malwares Found: %s" % malware_count
 		print "[+] Suspected false-positives: %s" % fp_count
@@ -132,6 +153,5 @@ for filename in os.listdir(path):
 			f.write("\t\t+-----------------------------------+"+ '\n')
 
 	except:
-	#	print "[+] Unable to access the internet. Please check your network connection."
 		tb = traceback.format_exc()
 		print tb

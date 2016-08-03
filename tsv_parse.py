@@ -39,4 +39,3 @@ def tsvparser(tsv_in):
 
     #remove intermediary hashlist
     os.remove('not-clean.hashes')
-    

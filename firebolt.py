@@ -8,12 +8,13 @@ from optparse import OptionParser
 from tsv_parse import tsvparser
 import wash_hashes
 
-def proc_core():
-    wash_hashes.start_washing('targets.hashes')
-    print "[-] Chunking ouput file to manageable sizes for VT"
-    wash_hashes.split_file('rem_3.out')
-    print "[-] Aurors are checking virustotal...please wait\n"
-    os.system("virustotal/vt_query.py")
+def proc_core(filename):
+    #wash_hashes.start_washing('targets.hashes')
+    #print "[-] Chunking ouput file to manageable sizes for VT"
+    #wash_hashes.split_file('rem_3.out')
+    #print "[-] Aurors are checking virustotal...please wait\n"
+    q = 'virustotal/vt_query.py %s' % filename
+    os.system(q)
 
 
 def main():
@@ -32,7 +33,8 @@ def main():
 
     if options.tsv:
         tsvparser(args[0])
-        proc_core()
+        filename_host = os.path.split(args[0])[1]
+        proc_core(filename_host)
 
     # Dont trust the user force E01 Check
     if img_file.endswith('.E01'):

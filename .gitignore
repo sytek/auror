@@ -8,5 +8,5 @@
 /virustotal/chunker/*
 filesystem.dobby
 filesystem.dobby2
-target.hashes
+targets.hashes
 rem_3.out
