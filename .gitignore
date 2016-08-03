@@ -9,4 +9,5 @@
 filesystem.dobby
 filesystem.dobby2
 targets.hashes
+session_whitelist.txt
 rem_3.out
