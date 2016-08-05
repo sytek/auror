@@ -7,15 +7,22 @@ import os, sys
 from optparse import OptionParser
 from tsv_parse import tsvparser
 import wash_hashes
+from es_import import bulk_send
 
 def proc_core(filename):
-    #wash_hashes.start_washing('targets.hashes')
-    #print "[-] Chunking ouput file to manageable sizes for VT"
-    #wash_hashes.split_file('rem_3.out')
-    #print "[-] Aurors are checking virustotal...please wait\n"
+    wash_hashes.start_washing('targets.hashes')
+    print "[-] Chunking ouput file to manageable sizes for VT"
+    wash_hashes.split_file('rem_3.out')
+    print "[-] Aurors are checking virustotal...please wait\n"
     q = 'virustotal/vt_query.py %s' % filename
     os.system(q)
-
+    complete = bulk_send('reports/report.csv')
+    
+    # CLEAN UP REPORTS DIRECTORY
+    if complete:
+        os.remove('reports/report.txt')
+        os.remove('reports/report.csv')
+	
 
 def main():
     parser = OptionParser(usage='usage: %prog [options] [filename | image_name]\n' + __description__)

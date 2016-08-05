@@ -2,6 +2,7 @@
 import simplejson, urllib, urllib2, traceback
 import subprocess, os, re, sys
 import time
+import datetime
 
 apt_count = 0
 malware_count = 0
@@ -27,7 +28,7 @@ def header():
 def header_csv():
 	# CSV Report Header
 	with open('reports/report.csv', 'a') as f:
-		f.write('hostname;hash;category;path;filename\n')
+		f.write('gen_date;hostname;hash;category;path;kaspersky;trendmicro;sophos;mcafee;malwarebytes;filename\n')
 
 # ADD A HASH VALUE TO THE WHITELIST
 def add_to_wlist(hashval):
@@ -46,10 +47,12 @@ def add_to_report(hashval):
 					f.write(line)
 
 
-def add_csv(host, list, category):
+def add_csv(host, list, category, avlist = ['','','','','']):
+	date = datetime.date.today()
 	with open('reports/report.csv', 'a') as f:
-		c_str = '%s;%s;%s;%s;%s' % (host, list[0], category, list[1], list[2])
+		c_str = '%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s' % (date, host, list[0], category, list[1], avlist[0], avlist[1], avlist[2], avlist[3], avlist[4], list[2] )
 		f.write(c_str)
+		
 
 ## CHECK IF FILE REPORT.TXT ALREADY EXISTS
 if os.path.exists('reports/report.txt') is False:
@@ -110,6 +113,14 @@ for filename in os.listdir(path):
 
 				else:
 					hash_sha1 = parsed_json[x]['sha1'].upper()
+					kas = parsed_json[x]['scans']['Kaspersky']['result']
+					trend = parsed_json[x]['scans']['TrendMicro']['result']
+					sophos = parsed_json[x]['scans']['Sophos']['result']
+					mc = parsed_json[x]['scans']['McAfee']['result']
+					malb =parsed_json[x]['scans']['Malwarebytes']['result']
+					
+					avlist = [kas, trend, sophos, mc, malb]
+					
 					with open('reports/report.txt', 'a') as f:
 						print "\033[1;31m[+] BOGGART FOUND \033[1;m"
 						f.write("\n[+] BOGGART FOUND \n")
@@ -117,18 +128,18 @@ for filename in os.listdir(path):
 						f.write("\tMD5: %s" % parsed_json[x]['md5'] + '\n')
 						f.write("\tDetected: %s / %s" % (parsed_json[x]['positives'], parsed_json[x]['total']) + '\n')
 						f.write('\n\tScan Report From: %s' % parsed_json[x]['scan_date'] + '\n')
-						f.write("\t\t\tKaspersky:\t %s" % parsed_json[x]['scans']['Kaspersky']['result']+ '\n')
-						f.write("\t\t\tTrendMicro:\t %s" % parsed_json[x]['scans']['TrendMicro']['result']+ '\n')
-						f.write("\t\t\tSophos: \t %s" % parsed_json[x]['scans']['Sophos']['result']+ '\n')
-						f.write("\t\t\tMcAfee: \t %s" % parsed_json[x]['scans']['McAfee']['result']+ '\n')
-						f.write('\t\t\tMalwarebytes:\t %s' % parsed_json[x]['scans']['Malwarebytes']['result']+ '\n\n')
+						f.write("\t\t\tKaspersky:\t %s" % kas + '\n')
+						f.write("\t\t\tTrendMicro:\t %s" % trend + '\n')
+						f.write("\t\t\tSophos: \t %s" % sophos + '\n')
+						f.write("\t\t\tMcAfee: \t %s" % mc + '\n')
+						f.write('\t\t\tMalwarebytes:\t %s' % malb + '\n\n')
 
 						f.write('\t\t\t[-] File: \n')
 						with open('filesystem.dobby') as w:
 							for line in w:
 								if line.startswith(hash_sha1):
 									hit_list = line.split(" ; ")
-									add_csv(host, hit_list, "MALWARE")
+									add_csv(host, hit_list, "MALWARE", avlist)
 									f.write('\t\t\t%s \n\n' % line)
 
 						malware_count += 1
